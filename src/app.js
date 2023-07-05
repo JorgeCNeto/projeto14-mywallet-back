@@ -23,26 +23,52 @@ try {
 const db = mongoClient.db()
 
 //Schemas
-// const usuariosSchema = Joi.object({
-//     nome: Joi.string.required()
-// })
+const usuariosSchema = Joi.object({
+    nome: Joi.string().required(),
+
+})
 
 //Endpoints
 app.post("/cadastro", async (req, res) => {
     const { nome, email, senha } = req.body
+    const cadastroSchema = Joi.object({
+        nome: Joi.string().required(),
+        email: Joi.string().email().required(),
+        senha: Joi.string().min(3).required()
+    })
 
-    const hash = bcrypt.hashSync(senha, 10)
-
-    try {
-        await db.collection("usuarios").insertOne({nome, email, senha: hash})
-        res.sendStatus(201)
-    } catch (err) {
-        res.status(500).send(err.message)
+    const validation = cadastroSchema.validate(req.body, {abortEarly: false})
+    if (validation.error) {
+        return res.status(422).send(validation.error.details.map(detail => detail.message))        
     }
+
+    const hash = bcrypt.hashSync(senha, 10)   
+    try {
+        const usuario = await db.collection("usuarios").findOne({ email })
+       
+        if (usuario) {
+            return res.status(409).send("Email cadastrado")
+        }        
+        await db.collection("usuarios").insertOne({nome, email, senha: hash})        
+        return res.sendStatus(201)
+    } catch (err) {
+        return res.status(500).send(err.message)
+    }
+    
 })
 
 app.post("/login", async (req, res) => {
     const { email, senha} = req.body
+    const loginSchema = Joi.object({        
+        email: Joi.string().email().required(),
+        senha: Joi.string().min(3).required()
+    })
+
+    const validation = loginSchema.validate(req.body, {abortEarly: false})
+    if (validation.error) {
+        return res.status(422).send(validation.error.details.map(detail => detail.message))
+    }
+
    
     try {
         const usuario = await db.collection("usuarios").findOne({ email })
