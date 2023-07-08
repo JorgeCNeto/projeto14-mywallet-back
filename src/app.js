@@ -4,6 +4,7 @@ import dotenv from "dotenv"
 import { MongoClient, ObjectId } from "mongodb"
 import Joi from "joi"
 import bcrypt from "bcrypt"
+import { v4 as uuid } from "uuid"
 
 const app = express()
 
@@ -58,7 +59,8 @@ app.post("/cadastro", async (req, res) => {
 })
 
 app.post("/login", async (req, res) => {
-    const { email, senha} = req.body
+    const { email, senha} = req.body    
+
     const loginSchema = Joi.object({        
         email: Joi.string().email().required(),
         senha: Joi.string().min(3).required()
@@ -80,16 +82,22 @@ app.post("/login", async (req, res) => {
             return res.status(401).send("Senha incorreta")
         }
 
-        res.sendStatus(200)
+        const token = uuid()
+        await db.collection("sessao").insertOne({ token, idUsuario: usuario._id})
+
+        return res.send(token)
     } catch (err) {
-        res.status(500).send(err.message)
+        return res.status(500).send(err.message)
     }
 })
 
 app.post("/nova-transacao/:tipo", async (req, res) => {
     const { valor, descricao, tipo } = req.body
-    const transacaoSchema =Joi.object({
 
+    const transacaoSchema =Joi.object({
+        valor:Joi.string().required(),
+        descricao: Joi.string().required(),
+        tipo: Joi.string().required().valid("entrada", "saida")
     })
 
     const validation = transacaoSchema.validade(req.body, {abortEarly: false})
@@ -98,16 +106,38 @@ app.post("/nova-transacao/:tipo", async (req, res) => {
     }
 
     try {
-
+        await db.collection("transacoes").insertOne({valor, descricao, tipo})
+        return res.sendStatus(200)
     } catch (err){
         return res.status(500).send(err.message)
     }
 })
 
 app.get("/home", async (req, res) => {
+    const { authorization } = req.headers
+    const token = authorization?.replace("Bearer ", "")
+
+    if (!token){
+        return res.sendStatus(401)
+    }
 
     try {
+        const sessao = await db.collection("sessao").findOne({ token })
+        if (!sessao){
+            return res.sendStatus(401)
+        }
 
+        const usuario = await db.collection("usuarios").findOne({ _id: sessao.idUsuario })
+
+        res.send(usuario.nome)
+    } catch {
+        return res.sendStatus(401)
+    }
+
+    try {
+        const transacaoDisplay = await db.collection("transacoes").find().toArray()
+        res.send(transacaoDisplay)
+        return res.sendStatus(200)
     } catch (err){
         return res.status(500).send(err.message)
     }
