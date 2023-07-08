@@ -86,6 +86,33 @@ app.post("/login", async (req, res) => {
     }
 })
 
+app.post("/nova-transacao/:tipo", async (req, res) => {
+    const { valor, descricao, tipo } = req.body
+    const transacaoSchema =Joi.object({
+
+    })
+
+    const validation = transacaoSchema.validade(req.body, {abortEarly: false})
+    if (validation.error){
+        return res.status(422).send(validation.error.details.map(detail => detail.message))
+    }
+
+    try {
+
+    } catch (err){
+        return res.status(500).send(err.message)
+    }
+})
+
+app.get("/home", async (req, res) => {
+
+    try {
+
+    } catch (err){
+        return res.status(500).send(err.message)
+    }
+})
+
 
 // listen
 const PORT = 5000
