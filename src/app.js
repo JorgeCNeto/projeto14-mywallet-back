@@ -145,5 +145,5 @@ app.get("/home", async (req, res) => {
 
 
 // listen
-const PORT = 5000
+const PORT = precess.env.PORT || 5000
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`))
