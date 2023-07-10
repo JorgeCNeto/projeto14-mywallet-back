@@ -1,10 +1,11 @@
 import cors from "cors"
 import express from "express"
 import dotenv from "dotenv"
-import { MongoClient, ObjectId } from "mongodb"
+import { MongoClient } from "mongodb"
 import Joi from "joi"
 import bcrypt from "bcrypt"
 import { v4 as uuid } from "uuid"
+import dayjs from "dayjs"
 
 const app = express()
 
@@ -85,7 +86,7 @@ app.post("/login", async (req, res) => {
         const token = uuid()
         await db.collection("sessao").insertOne({ token, idUsuario: usuario._id})
 
-        return res.send(token)
+        return res.send({token, name: usuario.nome})
     } catch (err) {
         return res.status(500).send(err.message)
     }
@@ -97,7 +98,7 @@ app.post("/nova-transacao/:tipo", async (req, res) => {
     const transacaoSchema =Joi.object({
         valor:Joi.string().required(),
         descricao: Joi.string().required(),
-        tipo: Joi.string().required().valid("entrada", "saida")
+        tipo: Joi.string().required().valid("entrada", "saida")        
     })
 
     const validation = transacaoSchema.validade(req.body, {abortEarly: false})
@@ -106,7 +107,7 @@ app.post("/nova-transacao/:tipo", async (req, res) => {
     }
 
     try {
-        await db.collection("transacoes").insertOne({valor, descricao, tipo})
+        await db.collection("transacoes").insertOne({valor, descricao, tipo, data: dayjs(Date.now()).format("DD/MM")})
         return res.sendStatus(200)
     } catch (err){
         return res.status(500).send(err.message)
@@ -126,16 +127,8 @@ app.get("/home", async (req, res) => {
         if (!sessao){
             return res.sendStatus(401)
         }
-
-        const usuario = await db.collection("usuarios").findOne({ _id: sessao.idUsuario })
-
-        res.send(usuario.nome)
-    } catch {
-        return res.sendStatus(401)
-    }
-
-    try {
-        const transacaoDisplay = await db.collection("transacoes").find().toArray()
+    
+        const transacaoDisplay = await db.collection("transacoes").find( {_id: sessao.idUsuario} ).toArray()
         res.send(transacaoDisplay)
         return res.sendStatus(200)
     } catch (err){
@@ -145,5 +138,5 @@ app.get("/home", async (req, res) => {
 
 
 // listen
-const PORT = precess.env.PORT || 5000
+const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`))
