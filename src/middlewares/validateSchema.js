@@ -1,6 +1,6 @@
 export function validadeSchema(schema){
     return (req, res, next) => {
-        const validation = schema.validade(req.body, {abortEarly: false})
+        const validation = schema.validate(req.body, {abortEarly: false})
 
         if (validation.error){
             const errors = validation.error.details.map(detail => detail.message)
