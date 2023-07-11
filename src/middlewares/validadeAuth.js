@@ -1,4 +1,4 @@
-import { db } from "../database/database.connection,js"
+import { db } from "../database/database.connection.js"
 
 export async function validateAuth(req, res, next) {
     const { authorization } = req.headers
@@ -15,7 +15,7 @@ export async function validateAuth(req, res, next) {
         }
     
         next()
-        
+
     } catch (err){
         return res.status(500).send(err.message)
     }
