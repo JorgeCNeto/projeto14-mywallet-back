@@ -13,6 +13,8 @@ export async function validateAuth(req, res, next) {
         if (!sessao){
             return res.sendStatus(401)
         }
+
+        res.locals.session = sessao
     
         next()
 
