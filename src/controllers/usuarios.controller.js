@@ -40,3 +40,13 @@ export async function login (req, res) {
         return res.status(500).send(err.message)
     }
 }
+
+export async function logout(req, res){
+    try {
+        await db.collection("sessao").deleteOne({ token })
+        res.sendStatus(200)
+
+    } catch (err) {
+        return res.status(500).send(err.message)
+    }
+}
