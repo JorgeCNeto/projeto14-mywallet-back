@@ -14,7 +14,10 @@ export async function transacoes(req, res) {
 }
 
 export async function home(req, res) {
-    const { idUsuario } = res.locals.session
+    //const { idUsuario } = res.locals.session
+    const {authorization} = req.headers;
+    const token = authorization?.replace('Bearer ', '')
+    const idUsuario = await session.findOne({token})
 
     try {          
         const transacaoDisplay = await db.collection("transacoes").find( {idUsuario} ).sort({date: -1}).toArray()
